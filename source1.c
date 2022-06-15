@@ -1771,3 +1771,203 @@ void main()
 	scanf("%d", &nodStart);
 	parcurgereLatime(mat, vizitat, vect, nrNoduri, nodStart);
 }
+
+//Lista de Liste
+
+#define _CRT_SECURE_NO_WARNINIGS
+#include<stdio.h>
+#include <malloc.h>
+#include<string.h>
+typedef struct
+{
+	int nrMatricol;
+	char* nume;
+	char* prenume;
+	float medieGenerala;
+} student;
+
+typedef struct
+{
+	student inf;
+	struct nodLS* next;
+} nodLS;
+
+typedef struct
+{
+	struct nodLS* inf;
+	struct nodLP* next;
+} nodLP;
+
+void inserareLS(nodLS** cap, student m)
+{
+	nodLS* nou = (nodLS*)malloc(sizeof(nodLS));
+	nou->inf.nrMatricol = m.nrMatricol;
+	nou->inf.nume = (char*)malloc((strlen(m.nume) + 1) *
+		sizeof(char));
+	strcpy(nou->inf.nume, m.nume);
+	nou->inf.prenume = (char*)malloc((strlen(m.prenume) + 1) *
+		sizeof(char));
+	strcpy(nou->inf.prenume, m.prenume);
+	nou->inf.medieGenerala = m.medieGenerala;
+	nou->next = NULL;
+	if (*cap == NULL)
+		*cap = nou;
+	else
+	{
+		nodLS* temp = *cap;
+		while (temp->next != NULL)
+			temp = temp->next;
+		temp->next = nou;
+	}
+}
+
+void inserareLP(nodLP** capLP, nodLS* capLS)
+{
+	nodLP* nou = (nodLP*)malloc(sizeof(nodLP));
+	nou->inf = capLS;
+	nou->next = NULL;
+	if (*capLP == NULL)
+		*capLP = nou;
+	else
+	{
+		nodLP* temp = *capLP;
+		while (temp->next != NULL)
+			temp = temp->next;
+		temp->next = nou;
+	}
+}
+
+void traversareLS(nodLS* cap)
+{
+	nodLS* temp = cap;
+	while (temp != NULL)
+	{
+		printf("\nnrMatricol= %d,Nume = %s, Prenume = %s,  Medie Generala = %5.2f,",
+			temp->inf.nrMatricol, temp->inf.nume, temp->inf.prenume,temp->inf.medieGenerala);
+		temp = temp->next;
+	}
+}
+
+void traversareLP(nodLP* cap)
+{
+	nodLP* temp = cap;
+	int i = 1;
+	while (temp != NULL)
+	{
+		printf("\nSublista: %d", i);
+		traversareLS(temp->inf);
+		temp = temp->next;
+		i++;
+	}
+}
+
+//nodLS* stergere_nodLS(nodLS* lista, int nrM) {
+//	if (lista)
+//	{
+//		if (lista->inf.nrMatricol == nrM)
+//		{
+//			nodLS* temp = lista;
+//			lista = lista->next;
+//			free(temp->inf.nume);
+//			free(temp->inf.prenume);
+//			free(temp);
+//
+//		}
+//		else {
+//			nodLS* temp = lista;
+//			nodLS* temp2 = lista->next;
+//
+//			while (temp2 != NULL && temp2->inf.nrMatricol != nrM)
+//				temp2 = temp2->next;
+//
+//			if (temp2) {
+//				nodLS* aux = temp2->next;
+//				temp2->next = aux->next;
+//				free(aux->inf.nume);
+//				free(aux->inf.prenume);
+//				free(aux);
+//
+//			}
+//		}
+//	}
+//}
+//nodLP* stergereLP(nodLP* lista, nodLS* nod,int nrM) {
+//	if (lista)
+//	{
+//		if (lista->inf == nod)
+//		{
+//			stergere_nodLS(nod, nrM);
+//		}
+//			
+//	}
+//}
+
+void dezalocareLS(nodLS* cap)
+{
+	nodLS* temp = cap;
+	while (temp)
+	{
+		nodLS* temp2 = temp->next;
+		free(temp->inf.nume);
+		free(temp->inf.prenume);
+		free(temp);
+		temp = temp2;
+	}
+}
+
+void dezalocareLP(nodLP* cap)
+{
+	nodLP* temp = cap;
+	while (temp)
+	{
+		nodLP* temp2 = temp->next;
+		dezalocareLS(temp->inf);
+		free(temp);
+		temp = temp2;
+	}
+}
+
+void main()
+{
+	nodLP* capLP = NULL;
+	nodLS* capLS1 = NULL, * capLS2 = NULL, * capLS3 = NULL;
+	int n;
+	char buffer[20];
+	student m;
+
+	FILE* f = fopen("fisier.txt", "r");
+	fscanf(f, " %d", &n);
+	for (int i = 0; i < n; i++)
+	{
+		fscanf(f, " %d", &m.nrMatricol);
+		fscanf(f, " %s", buffer);
+		m.nume = (char*)malloc((strlen(buffer) + 1) * sizeof(char));
+		strcpy(m.nume, buffer);
+		fscanf(f, " %s", buffer);
+		m.prenume = (char*)malloc((strlen(buffer) + 1) * sizeof(char));
+		strcpy(m.prenume, buffer);
+		fscanf(f, " %d", &m.medieGenerala);
+
+		if (m.medieGenerala<5)
+			inserareLS(&capLS1, m);
+		else
+			if (m.medieGenerala>=5 && m.medieGenerala<7 )
+				inserareLS(&capLS2, m);
+			else
+				if (m.medieGenerala >= 7 && m.medieGenerala <= 10)
+					inserareLS(&capLS3, m);
+
+		free(m.nume);
+		free(m.prenume);
+	}
+	fclose(f);
+
+	inserareLP(&capLP, capLS1);
+	inserareLP(&capLP, capLS2);
+	inserareLP(&capLP, capLS3);
+
+	//stergereLP(capLP, capLS1, 1);
+
+	traversareLP(capLP);
+	dezalocareLP(capLP);
+}
