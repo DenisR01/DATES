@@ -1971,3 +1971,271 @@ void main()
 	traversareLP(capLP);
 	dezalocareLP(capLP);
 }
+
+//MIN HEAP
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <malloc.h>
+#include <string.h>
+
+struct Platforma
+{
+	int cod;
+	char* denumire;
+	char* proprietar;
+	int nrFolosiri;
+	float pret;
+};
+
+struct MinHeap
+{
+	struct Platforma* vector;
+	int dim;
+};
+
+struct NodArb
+{
+	struct Platforma p;
+	struct NodArb* left, * right;
+
+};
+
+
+struct Platforma deepCopyPlatforma(struct Platforma p)
+{
+	struct Platforma copie;
+	copie.cod = p.cod;
+	copie.nrFolosiri = p.nrFolosiri;
+	copie.pret = p.pret;
+	copie.proprietar = (char*)malloc(strlen(p.proprietar) + 1);
+	strcpy(copie.proprietar, p.proprietar);
+	copie.denumire = (char*)malloc(strlen(p.denumire) + 1);
+	strcpy(copie.denumire, p.denumire);
+
+	return copie;
+}
+
+void afisarePlatforma(struct Platforma p)
+{
+	printf("%d %s %s %d %.2f\n", p.cod, p.denumire, p.proprietar, p.nrFolosiri, p.pret);
+}
+
+void filtrare(struct MinHeap h, int index)
+{
+	int indexMin = index;
+	int indexS = 2 * index + 1;
+	int indexD = 2 * index + 2;
+
+	if (indexS < h.dim && h.vector[indexS].pret < h.vector[indexMin].pret)
+		indexMin = indexS;
+	if (indexD < h.dim && h.vector[indexD].pret < h.vector[indexMin].pret)
+		indexMin = indexD;
+
+	if (indexMin != index)
+	{
+		struct Platforma aux = h.vector[index];
+		h.vector[index] = h.vector[indexMin];
+		h.vector[indexMin] = aux;
+
+		filtrare(h, indexMin);
+	}
+}
+
+void inserareMinHeap(struct MinHeap* h, struct Platforma p)
+{
+	struct Platforma* v = (struct Platforma*)malloc(((*h).dim +1) * sizeof(struct Platforma));
+
+	for (int i = 0; i < (*h).dim; i++)
+		v[i] = (*h).vector[i];
+
+	v[(*h).dim] = p;
+
+	free((*h).vector);
+
+	(*h).vector = v;
+	(*h).dim++;
+
+	for (int i = ((*h).dim - 1) / 2; i >= 0; i--)
+		filtrare(*h, i);
+
+}
+
+void afisareMinHeap(struct MinHeap h)
+{
+	for (int i = 0; i < h.dim; i++)
+		afisarePlatforma(h.vector[i]);
+}
+
+void modificaPretMinimLicenta(struct MinHeap h, float pretNou)
+{
+	h.vector[0].pret = pretNou;
+
+	for (int i = (h.dim + 1) / 2; i >= 0; i--)
+		filtrare(h, i);
+}
+
+struct NodArb* inserareArbore(struct NodArb* rad, struct Platforma p)
+{
+	if (rad)
+	{
+		if (p.nrFolosiri < rad->p.nrFolosiri)
+		{
+			rad->left = inserareArbore(rad->left, p);
+			return rad;
+		}
+		else if (p.nrFolosiri > rad->p.nrFolosiri)
+		{
+			rad->right = inserareArbore(rad->right, p);
+			return rad;
+		}
+		else return rad;
+			
+	}
+	else
+	{
+		struct NodArb* nou = (struct NodArb*)malloc(sizeof(struct NodArb));
+		nou->p = deepCopyPlatforma(p);
+		nou->left = NULL;
+		nou->right = NULL;
+
+		return nou;
+		
+	}
+}
+
+// platformele care au nrFolosiri > 3
+void copiereNPlatforme(struct MinHeap h, struct NodArb** rad, int n)
+{
+	for (int i = 0; i < n; i++)
+	{
+		printf("[%d]\n", i);
+		afisarePlatforma(h.vector[i]);
+		*rad = inserareArbore(*rad, h.vector[i]);
+
+	}
+
+	printf("\n");
+}
+
+
+void inordine(struct NodArb* rad)
+{
+	if(rad)
+	{
+		inordine(rad->left);
+		afisarePlatforma(rad->p);
+		inordine(rad->right);
+	}
+}
+
+void afisarePlatformeCu1Fiu(struct NodArb* rad)
+{
+	if (rad)
+	{
+		if ((rad->left && !rad->right) || (rad->right && !rad->left))
+			afisarePlatforma(rad->p);
+
+		afisarePlatformeCu1Fiu(rad->left);
+		afisarePlatformeCu1Fiu(rad->right);
+	}
+}
+
+void dezalocareMinHeap(struct MinHeap h)
+{
+	for (int i = 0; i < h.dim; i++)
+	{
+		free(h.vector[i].denumire);
+		free(h.vector[i].proprietar);
+	}
+
+	free(h.vector);
+}
+
+void dezalocareArboreBinar(struct NodArb* rad)
+{
+	if (rad)
+	{
+		struct NodArb* left = rad->left;
+		struct NodArb* right = rad->right;
+
+		free(rad->p.denumire);
+		free(rad->p.proprietar);
+		free(rad);
+
+		dezalocareArboreBinar(left);
+		dezalocareArboreBinar(right);
+	}
+}
+
+void main()
+{
+	FILE* f;
+	f = fopen("platforme.txt", "r+");
+
+	char buffer[64];
+	struct Platforma p;
+
+	struct MinHeap h;
+	h.dim = 0;
+	h.vector = NULL;
+
+	fscanf(f, "%d", &p.cod);
+
+	while (!feof(f))
+	{
+		fscanf(f, "%s", buffer);
+		p.denumire = (char*)malloc(strlen(buffer) + 1);
+		strcpy(p.denumire, buffer);
+
+		fscanf(f, "%s", buffer);
+		p.proprietar = (char*)malloc(strlen(buffer) + 1);
+		strcpy(p.proprietar, buffer);
+
+		fscanf(f, "%d", &p.nrFolosiri);
+
+		fscanf(f, "%f", &p.pret);
+
+		inserareMinHeap(&h, p);
+
+		fscanf(f, "%d", &p.cod);
+
+	}
+
+
+	afisareMinHeap(h);
+
+	printf("\n\nAfisarea MIN HEAP dupa modificarea pretului licentei celei mai ieftine: \n");
+	modificaPretMinimLicenta(h, 190);
+
+	afisareMinHeap(h);
+
+	afisareMinHeap(h);
+
+
+
+	printf("\n\nElemente copiate in ARBORE: \n");
+
+	struct NodArb* rad = NULL;
+
+	copiereNPlatforme(h, &rad, 5);
+
+	inordine(rad);
+
+
+	printf("\n\nAfisare platforme cu un SINGUR FIU: \n");
+	afisarePlatformeCu1Fiu(rad);
+
+	printf("\n\n");
+
+
+	dezalocareMinHeap(h);
+	dezalocareArboreBinar(rad);
+
+	printf("\n\nArbore binar DEZALOCAT!\nMinHeap DEZALOCAT!\n");
+
+}
+
+
+
+
+
